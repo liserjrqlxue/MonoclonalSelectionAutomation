@@ -1,6 +1,8 @@
 package downloader
 
 import (
+	"crypto/sha256"
+	"encoding/hex"
 	"errors"
 	"fmt"
 	"io"
@@ -8,6 +10,7 @@ import (
 	"net/url"
 	"os"
 	"path/filepath"
+	"time"
 )
 
 type DownloadInfo struct {
@@ -18,7 +21,7 @@ type DownloadInfo struct {
 	ExtractDir  string
 }
 
-// 构造新的 URL 和目标路径
+// 构造新的 URL 和输出路径
 func PrepareDownloadURL(rawURL string) (*DownloadInfo, error) {
 	parsedURL, err := url.Parse(rawURL)
 	if err != nil {
@@ -56,11 +59,11 @@ func PrepareDownloadURL(rawURL string) (*DownloadInfo, error) {
 	}, nil
 }
 
-// 带重试的下载函数（单线程）
-func DownloadWithRetry(path, url string, retry int) error {
+// 下载（带重试和可选SHA256校验）
+func DownloadWithRetry(path, url string, retry int, expectedSHA256 string) error {
 	var err error
 	for i := 0; i < retry; i++ {
-		err = downloadSingle(path, url)
+		err = downloadSingleWithProgress(path, url, expectedSHA256)
 		if err == nil {
 			return nil
 		}
@@ -69,9 +72,9 @@ func DownloadWithRetry(path, url string, retry int) error {
 	return err
 }
 
-// 单线程下载
-func downloadSingle(path, url string) error {
-	resp, err := http.Get(url)
+// 下载带进度条 + 可选校验
+func downloadSingleWithProgress(path, urlStr string, expectedSHA256 string) error {
+	resp, err := http.Get(urlStr)
 	if err != nil {
 		return fmt.Errorf("HTTP GET failed: %v", err)
 	}
@@ -87,6 +90,53 @@ func downloadSingle(path, url string) error {
 	}
 	defer out.Close()
 
-	_, err = io.Copy(out, resp.Body)
-	return err
+	fmt.Println("Downloading...")
+
+	hasher := sha256.New()
+	progress := &ProgressWriter{
+		Total: resp.ContentLength,
+		Start: time.Now(),
+	}
+
+	multiWriter := io.MultiWriter(out, hasher, progress)
+	_, err = io.Copy(multiWriter, resp.Body)
+	fmt.Println() // 换行
+
+	if err != nil {
+		return err
+	}
+
+	if expectedSHA256 != "" {
+		actual := hex.EncodeToString(hasher.Sum(nil))
+		if actual != expectedSHA256 {
+			return fmt.Errorf("SHA256 mismatch: expected %s, got %s", expectedSHA256, actual)
+		}
+		fmt.Println("SHA256 checksum verified.")
+	}
+
+	return nil
+}
+
+// 实时打印下载进度
+type ProgressWriter struct {
+	Downloaded int64
+	Total      int64
+	Start      time.Time
+}
+
+func (pw *ProgressWriter) Write(p []byte) (int, error) {
+	n := len(p)
+	pw.Downloaded += int64(n)
+
+	if pw.Total > 0 {
+		percent := float64(pw.Downloaded) / float64(pw.Total) * 100
+		speed := float64(pw.Downloaded) / 1024.0 / time.Since(pw.Start).Seconds()
+		fmt.Printf("\r%.1f%% (%.2f MB / %.2f MB) [%.1f KB/s]",
+			percent,
+			float64(pw.Downloaded)/1024.0/1024.0,
+			float64(pw.Total)/1024.0/1024.0,
+			speed,
+		)
+	}
+	return n, nil
 }

@@ -11,6 +11,12 @@ import (
 	"MonoclonalSelectionAutomation/unzip"
 )
 
+var sha256sum string
+
+func init() {
+	rootCmd.Flags().StringVar(&sha256sum, "sha256", "", "Expected SHA256 checksum (optional)")
+}
+
 var rootCmd = &cobra.Command{
 	Use:   "urlfetch <url>",
 	Short: "Download and extract os_all_file by parsing a URL",
@@ -27,7 +33,7 @@ var rootCmd = &cobra.Command{
 		}
 
 		fmt.Println("Downloading from:", info.DownloadURL)
-		err = downloader.DownloadWithRetry(info.ZipPath, info.DownloadURL, 3)
+		err = downloader.DownloadWithRetry(info.ZipPath, info.DownloadURL, 3, sha256sum)
 		if err != nil {
 			log.Fatalf("Download failed: %v", err)
 		}
