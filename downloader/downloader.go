@@ -116,27 +116,3 @@ func downloadSingleWithProgress(path, urlStr string, expectedSHA256 string) erro
 
 	return nil
 }
-
-// 实时打印下载进度
-type ProgressWriter struct {
-	Downloaded int64
-	Total      int64
-	Start      time.Time
-}
-
-func (pw *ProgressWriter) Write(p []byte) (int, error) {
-	n := len(p)
-	pw.Downloaded += int64(n)
-
-	if pw.Total > 0 {
-		percent := float64(pw.Downloaded) / float64(pw.Total) * 100
-		speed := float64(pw.Downloaded) / 1024.0 / time.Since(pw.Start).Seconds()
-		fmt.Printf("\r%.1f%% (%.2f MB / %.2f MB) [%.1f KB/s]",
-			percent,
-			float64(pw.Downloaded)/1024.0/1024.0,
-			float64(pw.Total)/1024.0/1024.0,
-			speed,
-		)
-	}
-	return n, nil
-}
