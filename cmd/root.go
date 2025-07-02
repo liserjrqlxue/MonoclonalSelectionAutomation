@@ -18,7 +18,7 @@ func init() {
 }
 
 var rootCmd = &cobra.Command{
-	Use:   "urlfetch <url>",
+	Use:   "MonoclonalSelectionAutomation <url>",
 	Short: "Download and extract os_all_file by parsing a URL",
 	Args:  cobra.ExactArgs(1),
 	Run: func(cmd *cobra.Command, args []string) {
