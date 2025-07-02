@@ -96,7 +96,27 @@ func WriteGeneSummaryFiles(orderID string, geneMap map[string]*GeneSummary) erro
 		return fmt.Errorf("写入 json 失败: %v", err)
 	}
 
-	log.Printf("✅ 生成报告：%s / %s", txtPath, jsonPath)
+	// ➕ 写 rename.txt
+	renamePath := filepath.Join(outDir, "rename.txt")
+	renameFile, err := os.Create(renamePath)
+	if err != nil {
+		return fmt.Errorf("无法创建 rename.txt: %v", err)
+	}
+	defer renameFile.Close()
+
+	var names []string
+	for name := range geneMap {
+		names = append(names, name)
+	}
+	sort.Strings(names)
+	for _, geneName := range names {
+		prefix := strings.Replace(geneName, "_", "-", 1)
+		fmt.Fprintf(renameFile, "%s\t%s\n", geneName, prefix)
+		fmt.Fprintf(renameFile, "%s0P\t%s\n", geneName, prefix)
+	}
+	log.Printf("✅ 生成 rename.txt: %s\n", renamePath)
+
+	log.Printf("✅ 生成报告：%s / %s\n", txtPath, jsonPath)
 	return nil
 }
 
