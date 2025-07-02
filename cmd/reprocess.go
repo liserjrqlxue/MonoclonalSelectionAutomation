@@ -3,7 +3,6 @@ package cmd
 import (
 	"fmt"
 	"log"
-	"path/filepath"
 
 	"MonoclonalSelectionAutomation/report"
 
@@ -16,9 +15,9 @@ var reprocessCmd = &cobra.Command{
 	Args:  cobra.ExactArgs(1),
 	Run: func(cmd *cobra.Command, args []string) {
 		orderID := args[0]
-		ab1Dir := filepath.Join(orderID, "报告成功")
+		// ab1Dir := filepath.Join(orderID, "报告成功")
 
-		geneMap, invalidCount, err := report.ScanAb1Files(ab1Dir)
+		geneMap, invalidCount, err := report.ScanAb1Files(orderID)
 		if err != nil {
 			log.Fatalf("❌ 分析失败: %v", err)
 		}
