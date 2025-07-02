@@ -94,7 +94,7 @@ func downloadSingleWithProgress(path, urlStr string, expectedSHA256 string) erro
 
 	hasher := sha256.New()
 	progress := &ProgressWriter{
-		Total: resp.ContentLength,
+		Total: resp.ContentLength, // 或 info.ContentLength
 		Start: time.Now(),
 	}
 
