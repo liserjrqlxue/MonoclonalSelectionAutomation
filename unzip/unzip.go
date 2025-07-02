@@ -5,8 +5,10 @@ import (
 	"bytes"
 	"fmt"
 	"io"
+	"log"
 	"os"
 	"path/filepath"
+	"regexp"
 	"strings"
 
 	"golang.org/x/text/encoding/simplifiedchinese"
@@ -43,6 +45,8 @@ func isUTF8(s string) bool {
 	return true
 }
 
+var ab1Pattern = regexp.MustCompile(`^(\d{4}EG[A-Z])-(\d{3}[A-Z0-9]*)-(\d+)\.T7`)
+
 func Unzip(zipPath, destDir string) error {
 	r, err := zip.OpenReader(zipPath)
 	if err != nil {
@@ -50,20 +54,35 @@ func Unzip(zipPath, destDir string) error {
 	}
 	defer r.Close()
 
-	for _, f := range r.File {
-		name := decodeFileName(f.Name)
+	var invalidCount = 0
 
-		fpath := filepath.Join(destDir, name)
+	for _, f := range r.File {
+		// ✅ 修复路径兼容性
+		safeName := strings.ReplaceAll(decodeFileName(f.Name), "\\", "/")
+		fpath := filepath.Join(destDir, safeName)
 
 		// 避免目录穿越攻击
+		// 防止 zip slip 攻击
 		if !strings.HasPrefix(fpath, filepath.Clean(destDir)+string(os.PathSeparator)) {
-			return fmt.Errorf("illegal file path: %s", fpath)
+			return fmt.Errorf("非法路径: %s", fpath)
 		}
 
 		if f.FileInfo().IsDir() {
 			os.MkdirAll(fpath, os.ModePerm)
 			continue
 		}
+
+		// ✅ 提取 baseName，用于 .ab1 分析时
+		baseName := filepath.Base(safeName)
+		if strings.HasSuffix(safeName, ".ab1") {
+			match := ab1Pattern.FindStringSubmatch(baseName)
+			if match == nil {
+				fmt.Printf("⚠️ 非法文件名: %s\n", baseName)
+				invalidCount++
+
+			}
+		}
+
 		if err := os.MkdirAll(filepath.Dir(fpath), os.ModePerm); err != nil {
 			return err
 		}
@@ -85,5 +104,6 @@ func Unzip(zipPath, destDir string) error {
 			return err
 		}
 	}
+	log.Printf("非法文件: %d", invalidCount)
 	return nil
 }
