@@ -33,7 +33,7 @@ func init() {
 	calpcaCmd.Flags().StringVar(&calpcaBase, "base", "", "baseName（可省略，默认从 dir 获取）")
 	calpcaCmd.Flags().StringVar(&calpcaOrderID, "order", "", "订单 ID（可省略，默认从 dir 获取）")
 
-	calpcaCmd.Flags().IntVarP(&MaxQual, "qual", "q", 45, "变异保留质量阈值")
+	calpcaCmd.Flags().IntVarP(&MaxQual, "qual", "q", 0, "变异保留质量阈值")
 
 	calpcaCmd.MarkFlagRequired("dir")
 	rootCmd.AddCommand(calpcaCmd)
