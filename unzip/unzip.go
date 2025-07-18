@@ -45,7 +45,7 @@ func isUTF8(s string) bool {
 	return true
 }
 
-var ab1Pattern = regexp.MustCompile(`^(\d{4}EG[A-Z])-(\d{3}[A-Z0-9]*)-(\d+)\.T7`)
+var ab1Pattern = regexp.MustCompile(`^(\d{4}EG[A-Z])[-_](\d{3}[a-zA-Z0-9]*)-{1,2}(\d+)\.T7`)
 
 func Unzip(zipPath, destDir string) error {
 	r, err := zip.OpenReader(zipPath)
@@ -77,7 +77,7 @@ func Unzip(zipPath, destDir string) error {
 		if strings.HasSuffix(safeName, ".ab1") {
 			match := ab1Pattern.FindStringSubmatch(baseName)
 			if match == nil {
-				fmt.Printf("⚠️ 非法文件名: %s\n", baseName)
+				fmt.Printf("⚠️ 非法文件名: [%s]\n", baseName)
 				invalidCount++
 
 			}
