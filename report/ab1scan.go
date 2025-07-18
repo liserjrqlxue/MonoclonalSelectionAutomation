@@ -12,10 +12,11 @@ import (
 	"strings"
 )
 
-var pattern = regexp.MustCompile(`^(\d{4}EG[A-Z])-(\d{3}[A-Z0-9]*)-(\d+)\.T7`)
+var pattern = regexp.MustCompile(`^(\d{4}EG[A-Z][-_]\d{3}[a-zA-Z0-9]*)-{1,2}(\d+)\.T7`)
 
 type GeneSummary struct {
 	GeneName   string   `json:"gene_name"`
+	Prefeix    string   `json:"prefix"`
 	CloneIDs   []string `json:"clone_ids"`
 	CloneCount int      `json:"clone_count"`
 }
@@ -41,12 +42,14 @@ func ScanAb1Files(ab1Root string) (map[string]*GeneSummary, int, error) {
 			return nil
 		}
 
-		geneName := match[1] + "_" + match[2]
-		cloneID := match[3]
+		prefix := match[1]
+		geneName := strings.Replace(prefix, "-", "_", 1)
+		cloneID := match[2]
 
 		if _, exists := geneMap[geneName]; !exists {
 			geneMap[geneName] = &GeneSummary{
 				GeneName: geneName,
+				Prefeix:  prefix,
 			}
 		}
 		geneMap[geneName].CloneIDs = append(geneMap[geneName].CloneIDs, cloneID)
@@ -110,9 +113,8 @@ func WriteGeneSummaryFiles(orderID string, geneMap map[string]*GeneSummary) erro
 	}
 	sort.Strings(names)
 	for _, geneName := range names {
-		prefix := strings.Replace(geneName, "_", "-", 1)
-		fmt.Fprintf(renameFile, "%s\t%s\n", geneName, prefix)
-		fmt.Fprintf(renameFile, "%s0P\t%s\n", geneName, prefix)
+		fmt.Fprintf(renameFile, "%s\t%s-\n", geneName, geneMap[geneName].Prefeix)
+		fmt.Fprintf(renameFile, "%s0P\t%s-\n", geneName, geneMap[geneName].Prefeix)
 	}
 	log.Printf("✅ 生成 rename.txt: %s\n", renamePath)
 
