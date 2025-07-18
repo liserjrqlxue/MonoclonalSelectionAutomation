@@ -7,6 +7,7 @@ import (
 	"os/exec"
 	"path/filepath"
 	"regexp"
+	"strconv"
 
 	"github.com/spf13/cobra"
 )
@@ -23,12 +24,16 @@ var (
 	calpcaDir     string
 	calpcaBase    string
 	calpcaOrderID string
+
+	MaxQual int
 )
 
 func init() {
 	calpcaCmd.Flags().StringVarP(&calpcaDir, "dir", "d", "", "主目录路径（必须）")
 	calpcaCmd.Flags().StringVar(&calpcaBase, "base", "", "baseName（可省略，默认从 dir 获取）")
 	calpcaCmd.Flags().StringVar(&calpcaOrderID, "order", "", "订单 ID（可省略，默认从 dir 获取）")
+
+	calpcaCmd.Flags().IntVarP(&MaxQual, "qual", "q", 45, "变异保留质量阈值")
 
 	calpcaCmd.MarkFlagRequired("dir")
 	rootCmd.AddCommand(calpcaCmd)
@@ -63,9 +68,10 @@ func runCalPCA() {
 		args := []string{
 			"-i", prefix + "-自合.xlsx",
 			"-io", prefix + "-引物订购单_BOM.xlsx",
-			"-r", filepath.Join(calpcaOrderID, calpcaOrderID+".os_all_file", "rename.txt"),
+			"-r", filepath.Join(calpcaOrderID, "rename.txt"),
 			"-s", filepath.Join(calpcaOrderID, calpcaOrderID+".os_all_file"),
 			"-o", filepath.Join(calpcaOrderID, subBase),
+			"-q", strconv.Itoa(MaxQual),
 		}
 
 		runCmd := exec.Command("calPCA", args...)
