@@ -26,6 +26,8 @@ var (
 	calpcaOrderID string
 
 	MaxQual int
+
+	RunFix bool
 )
 
 func init() {
@@ -35,7 +37,10 @@ func init() {
 
 	calpcaCmd.Flags().IntVarP(&MaxQual, "qual", "q", 0, "变异保留质量阈值")
 
+	calpcaCmd.Flags().BoolVarP(&RunFix, "fix", "f", false, "进行化学补充")
+
 	calpcaCmd.MarkFlagRequired("dir")
+
 	rootCmd.AddCommand(calpcaCmd)
 }
 
@@ -72,6 +77,9 @@ func runCalPCA() {
 			"-s", filepath.Join(calpcaOrderID, calpcaOrderID+".os_all_file"),
 			"-o", filepath.Join(calpcaOrderID, subBase),
 			"-q", strconv.Itoa(MaxQual),
+		}
+		if RunFix {
+			args = append(args, "-fix")
 		}
 
 		runCmd := exec.Command("calPCA", args...)
